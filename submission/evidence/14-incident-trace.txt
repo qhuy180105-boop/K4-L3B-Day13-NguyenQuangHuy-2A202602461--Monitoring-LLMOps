@@ -1,0 +1,8 @@
+Trace ID: req-ae71b5d4
+Trace Name: day13-agent-request
+Total Duration: 2652ms
+Span Breakdown:
+ - lab-agent-run (agent): 2652ms
+   - retrieval (span): 2500ms (DELAY DETECTED HERE - Root Cause)
+   - generation (generation): 150ms
+Root Cause: Vector Store / RAG retrieval latency delay (rag_slow incident injected, causing 2.5s delay in mock_rag.py).

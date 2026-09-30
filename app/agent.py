@@ -51,7 +51,13 @@ class LabAgent:
             },
         ):
             started = time.perf_counter()
-            docs = retrieve(message)
+            
+            @observe(name="retrieval", as_type="span", capture_input=False, capture_output=False)
+            def _retrieve(msg):
+                return retrieve(msg)
+                
+            docs = _retrieve(message)
+            
             prompt = resolve_prompt(
                 langfuse_client,
                 feature=feature,
@@ -71,13 +77,28 @@ class LabAgent:
                 },
                 version=prompt.version,
             )
-            # TODO (CP2): instrument retrieve() and FakeLLM.generate() as child
-            # observations. The nested generation must receive prompt, usage and cost.
+            
+            @observe(name="generation", as_type="generation", capture_input=False, capture_output=False)
+            def _generate(prompt_text):
+                res = self.llm.generate(prompt_text)
+                cost = self._estimate_cost(res.usage.input_tokens, res.usage.output_tokens)
+                langfuse_client.update_current_generation(
+                    model=self.model,
+                    input=summarize_text(prompt_text),
+                    output=summarize_text(res.text),
+                    usage_details={
+                        "input": res.usage.input_tokens,
+                        "output": res.usage.output_tokens,
+                    },
+                    cost_details={"total": cost},
+                )
+                return res, cost
+
             with propagate_attributes(prompt=prompt.managed_prompt):
-                response = self.llm.generate(prompt.text)
+                response, cost_usd = _generate(prompt.text)
+                
             quality_score = self._heuristic_quality(message, response.text, docs)
             latency_ms = int((time.perf_counter() - started) * 1000)
-            cost_usd = self._estimate_cost(response.usage.input_tokens, response.usage.output_tokens)
 
         metrics.record_request(
             latency_ms=latency_ms,

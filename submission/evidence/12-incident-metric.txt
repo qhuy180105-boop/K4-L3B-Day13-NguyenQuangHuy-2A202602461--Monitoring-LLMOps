@@ -1,0 +1,7 @@
+--- Challenge Metrics Summary ---
+Challenge ID: day13-k4-l3b-monitoring-llmops-v1
+Incident Detected: High Latency (P95 Spike) on feature 'monitoring'
+Latency Threshold: 2000ms
+Observed Server Latency: 2652ms
+Observed Client Total Latency (concurrency 5): 7970.1ms to 13281.9ms
+Status: Violation of SLO (Primary SLO fast_successful_requests <= 3000ms breached)
